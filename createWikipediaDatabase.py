@@ -4,6 +4,7 @@ import argparse
 import mwparserfromhell
 import mwxml
 import xml.etree.ElementTree as ET
+import os
 
 def create_database(database_path):
     """Crea la base de datos SQLite con una tabla indexada."""
@@ -33,6 +34,10 @@ def extract_text_from_wikitext(wikitext):
 
 def parse_wikipedia_dump(dump_path, database_path):
     """Procesa el dump de Wikipedia y almacena los artículos en la base de datos."""
+    
+    if os.path.exists(database_path):
+        os.remove(database_path)
+    
     create_database(database_path)
 
     conn = sqlite3.connect(database_path)
@@ -59,7 +64,7 @@ def parse_wikipedia_dump(dump_path, database_path):
                 articles.append((title, text))
                 
             if len(articles) >= batch_size:
-                cursor.executemany("INSERT OR IGNORE INTO articles (title, content) VALUES (?, ?)", articles)
+                cursor.executemany("INSERT OR IGNORE INTO articles (title, text) VALUES (?, ?)", articles)
                 conn.commit()
                 articles.clear()  
 

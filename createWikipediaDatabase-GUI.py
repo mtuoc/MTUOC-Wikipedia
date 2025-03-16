@@ -34,6 +34,10 @@ def extract_text_from_wikitext(wikitext):
 
 def parse_wikipedia_dump(dump_path, database_path, update_progress):
     """Procesa el dump de Wikipedia y almacena los artículos en la base de datos."""
+    
+    if os.path.exists(database_path):
+        os.remove(database_path)
+    
     create_database(database_path)
 
     conn = sqlite3.connect(database_path)
