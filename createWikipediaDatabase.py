@@ -61,6 +61,8 @@ def parse_wikipedia_dump(dump_path, database_path):
                 text = extract_text_from_wikitext(revision.text)
             
             if title and text:
+                title = title.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+                text = text.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
                 articles.append((title, text))
                 
             if len(articles) >= batch_size:
