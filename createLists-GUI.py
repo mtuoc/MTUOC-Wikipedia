@@ -14,8 +14,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-
 from tkinter import *
 from tkinter.ttk import *
 
@@ -25,15 +23,8 @@ from tkinter.filedialog import asksaveasfilename
 from tkinter.filedialog import askdirectory
 from tkinter import messagebox
 
-import codecs
-
 import sqlite3
-import os
-import gzip
-import re
-from bz2 import BZ2File as bzopen
 import codecs
-from lxml import etree as et
 import sys
  
 # Define a dictionary with category namespaces for different languages
