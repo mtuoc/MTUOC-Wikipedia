@@ -9,7 +9,7 @@ def go():
     entrada=codecs.open(titlesfile,"r",encoding="utf-8")
     for linia in entrada:
         title=linia.strip()
-        aux=title+".txt"
+        aux=title.replace(" ","_").replace("/","_").replace("\\","_")+".txt"
         outfilename=os.path.join(outdir,aux)
         sortida=codecs.open(outfilename,"w",encoding="utf-8")
         cur.execute('SELECT text from articles WHERE title=?', (title,))
