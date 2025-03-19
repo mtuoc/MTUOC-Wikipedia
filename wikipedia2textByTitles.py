@@ -6,13 +6,16 @@ import os
 
 
 def go():
-    cur.execute('SELECT text from articles WHERE title=?', (article,))
-    data=cur.fetchall()
-    for d in data:
-        text=d[0]
-        print(title)
-        print(text)
-        print("-----")
+    entrada=codecs.open(titlesfile,"r",encoding="utf-8")
+    for linia in entrada:
+        title=linia.strip()
+        cur.execute('SELECT text from articles WHERE title=?', (title,))
+        data=cur.fetchall()
+        for d in data:
+            text=d[0]
+            print(title)
+            print(text)
+            print("-----")
 
 
     
