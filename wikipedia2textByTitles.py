@@ -6,7 +6,7 @@ import os
 
 
 def go():
-    cur.execute('SELECT text from articles WHERE article=?', (article,))
+    cur.execute('SELECT text from articles WHERE title=?', (article,))
     data=cur.fetchall()
     for d in data:
         text=d[0]
