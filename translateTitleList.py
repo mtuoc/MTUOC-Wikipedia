@@ -70,7 +70,7 @@ def go():
                 for d in data2:
                     if not d[0] in control:
                         print(d[0])     
-                        sortida.write("d[0]\n")
+                        sortida.write(d[0]+"\n")
                         control.append(d[0])
             else:
                 #select * from langlinks where ident="13692155" and lang="ru";
@@ -79,7 +79,7 @@ def go():
                 for d in data2:
                     if not d[0] in control:
                         print(d[0])     
-                        sortida.write("d[0]\n")
+                        sortida.write(d[0]+"\n")
                         control.append(d[0])
         
 
