@@ -9,14 +9,19 @@ def go():
     entrada=codecs.open(titlesfile,"r",encoding="utf-8")
     for linia in entrada:
         title=linia.strip()
+        aux=title+".txt"
+        outfilename=os.path.join(outdir,aux)
+        sortida=codecs.open(outfilename,"w",encoding="utf-8")
         cur.execute('SELECT text from articles WHERE title=?', (title,))
         data=cur.fetchall()
         for d in data:
             text=d[0]
             print(title)
+            sortida.write(title+"\n")
             print(text)
+            sortida.write(text+"\n")
             print("-----")
-
+        sortida.close()
 
     
 parser = argparse.ArgumentParser(description='Script to convert Wikipedia dumps to text files from a list of titles')
