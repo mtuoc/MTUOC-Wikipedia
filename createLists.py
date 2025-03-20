@@ -179,75 +179,102 @@ category_namespaces = {
 
 def create_lists(database, categories, depth, lang, category_list_file, title_list_file):
     try:
-        categories = [cat.strip() for cat in categories.split(",")]
-        categories_temp = categories[:]
-        categories_aux = []
+        allCategories=False
+        if categories=="*" or categories=="All" or categories=="all":
+            allCategories=True
+        else:
+            categories = [cat.strip() for cat in categories.split(",")]
+            categories_temp = categories[:]
+            categories_aux = []
         
         conn = sqlite3.connect(database)
         cur = conn.cursor()
         categoryprefix=category_namespaces[lang]+":"
-        while depth > 0:
-            while categories_temp:
-                category = categories_temp.pop(0)
-                cur.execute('SELECT categoryREL FROM categoryrelations WHERE category=?', (category,))
-                data = cur.fetchall()
-                for d in data:
-                    categories.append(d[0])
-                    categories_aux.append(d[0])
-            categories_temp.extend(categories_aux)
-            categories_aux = []
-            depth -= 1
+        titles = []    
+        if not allCategories:
 
-        idents = {}
-        with codecs.open(category_list_file, "w", encoding="utf-8") as cf:
-            for category in categories:
-                cf.write(category + "\n")
-                cur.execute('SELECT ident FROM categories WHERE category=?', (category,))
-                data = cur.fetchall()
-                for d in data:
-                    idents[d[0]] = 1
+            while depth > 0:
+                while categories_temp:
+                    category = categories_temp.pop(0)
+                    cur.execute('SELECT categoryREL FROM categoryrelations WHERE category=?', (category,))
+                    data = cur.fetchall()
+                    for d in data:
+                        categories.append(d[0])
+                        categories_aux.append(d[0])
+                categories_temp.extend(categories_aux)
+                categories_aux = []
+                depth -= 1
 
-        titles = []
-        idents = list(idents.keys())
-        with codecs.open(title_list_file, "w", encoding="utf-8") as tf:
-            if lang != "en":
-                for ident in idents:
-                    cur.execute('SELECT title FROM langlinks WHERE ident=? AND lang=?', (ident, lang))
-                    data = cur.fetchone()
+            idents = {}
+            with codecs.open(category_list_file, "w", encoding="utf-8") as cf:
+                for category in categories:
+                    cf.write(category + "\n")
+                    cur.execute('SELECT ident FROM categories WHERE category=?', (category,))
+                    data = cur.fetchall()
+                    for d in data:
+                        idents[d[0]] = 1
+
+            
+            if not allCategories:
+                with codecs.open(title_list_file, "w", encoding="utf-8") as tf:
+                    if lang != "en":
+                        for ident in idents:
+                            cur.execute('SELECT title FROM langlinks WHERE ident=? AND lang=?', (ident, lang))
+                            data = cur.fetchone()
+                            if not data==None:
+                                if not data[0].startswith(categoryprefix):
+                                    titles.append(data[0])
+                                    tf.write(data[0]+"\n")
+                    else:
+                        for ident in idents:
+                            cur.execute('SELECT title FROM titles WHERE ident=?', (str(ident),))
+                            data = cur.fetchone()
+                            if not data==None:
+                                if not data[0].startswith(categoryprefix):
+                                    titles.append(data[0])
+                                    tf.write(data[0]+"\n")
+        else:
+            with codecs.open(title_list_file, "w", encoding="utf-8") as tf:
+                if lang != "en":
+                    cur.execute('SELECT title FROM langlinks WHERE lang=?', (lang,))
+                    data = cur.fetchall()
+                    
                     if not data==None:
-                        if not data[0].startswith(categoryprefix):
-                            titles.append(data[0])
-                            tf.write(data[0]+"\n")
-            else:
-                for ident in idents:
-                    cur.execute('SELECT title FROM titles WHERE ident=?', (str(ident),))
-                    data = cur.fetchone()
+                        for d in data:
+                            if not d[0].startswith(categoryprefix):
+                                titles.append(d[0])
+                                tf.write(d[0]+"\n")
+                else:
+                    cur.execute('SELECT title FROM titles')
+                    data = cur.fetchall()
                     if not data==None:
-                        if not data[0].startswith(categoryprefix):
-                            titles.append(data[0])
-                            tf.write(data[0]+"\n")
-
-        print(f"Total categories: {len(categories)}")
+                        for d in data:
+                            if not d[0].startswith(categoryprefix):
+                                titles.append(d[0])
+                                tf.write(d[0]+"\n")
+        if not allCategories:
+            print(f"Total categories: {len(categories)}")
         print(f"Total titles: {len(titles)}")
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}:", sys.exc_info())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create category and title lists from a database.")
     parser.add_argument("-d", "--database", required=True, help="Path to the SQLite database file.")
-    parser.add_argument("-c", "--categories", required=True, help="Comma-separated list of categories to start with.")
-    parser.add_argument("--depth", type=int, required=True, help="Depth of category relations.")
+    parser.add_argument("-c", "--categories", required=True, help="Comma-separated list of categories to start with. Use * or All for all categories.")
+    parser.add_argument("--depth", type=int, required=False, help="Depth of category relations.")
     parser.add_argument("--lang", required=True, help="Language code.")
-    parser.add_argument("-cl", "--category_list", default="category-list.txt", help="Output file for the category list.")
+    parser.add_argument("-cl", "--category_list", required=False, default="category-list.txt", help="Output file for the category list.")
     parser.add_argument("-tl", "--title_list", default="title-list.txt", help="Output file for the title list.")
 
     args = parser.parse_args()
-
+    depth=args.depth
+    if depth==None: depth=1
     create_lists(
         database=args.database,
         categories=args.categories,
-        depth=args.depth,
+        depth=depth,
         lang=args.lang,
         category_list_file=args.category_list,
         title_list_file=args.title_list

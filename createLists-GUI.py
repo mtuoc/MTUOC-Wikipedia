@@ -214,86 +214,112 @@ def select_output():
     E5.xview_moveto(1)
 
 
-def go():
-    global categories
-    global categoriesTEMP
-    global categoriesAUX
-    
-    
-    
+
+
+def create_lists():
+    categories=[]
+    categoriesTEMP=[]
+    categoriesAUX=[]
+    todownload=[]
+    database=E1.get()
+    categoria=E2.get()
+    depth=E3.get()
+    category_list_file=E5.get()
+    title_list_file=E6.get()
+    if depth==None: depth=1
     try:
-        categories=[]
-        categoriesTEMP=[]
-        categoriesAUX=[]
-        todownload=[]
-        filename=E1.get()
-        conn=sqlite3.connect(filename)
-        cur = conn.cursor()
-        categoria=E2.get()
-        level=int(E3.get())
-        lang=E4.get()
-        categoryprefix=category_namespaces[lang]+":"
-        for cat in categoria.split(","):
-            cat=cat.strip()
-            categories.append(cat)
-            categoriesTEMP.append(cat)
-        while level>0:
-            while(len(categoriesTEMP))>0:
-                categoria=categoriesTEMP.pop(0)
-                cur.execute('SELECT categoryREL from categoryrelations WHERE category=?', (categoria,))
-                data=cur.fetchall()
-                for d in data:
-                    categories.append(d[0])
-                    categoriesAUX.append(d[0])
-            categoriesTEMP.extend(categoriesAUX)
-            categoriesAUX=[]
-            level-=1
-               
-        E7.delete(0,END)
-        E7.insert(0,len(categories))
-
-        idents={}
-        
-        categorylistfile=E5.get()
-        titlelistfile=E6.get()
-        cf=codecs.open(categorylistfile,"w",encoding="utf-8")
-        tf=codecs.open(titlelistfile,"w",encoding="utf-8")
-
-        for category in categories:
-            cf.write(category+"\n")
-            cur.execute('SELECT ident from categories WHERE category=?', (category,))
-            data=cur.fetchall()
-            for d in data:
-                idents[d[0]]=1
-                
-        idents=idents.keys()
-        
-        E7.delete(0,END)
-        E7.insert(0,len(categories))
-        
-        titles=[]
-        if not lang=="en":
-            for ident in idents:
-                cur.execute('SELECT title from langlinks WHERE ident=? and lang=?', (ident,lang))
-                data=cur.fetchone()
-                if not data==None:
-                    if not data[0].startswith(categoryprefix):
-                        titles.append(data[0])
-                        tf.write(data[0]+"\n")
+        depth=int(depth)
+    except:
+        depth=1
+    lang=E4.get()
+    try:
+        allCategories=False
+        if categoria=="*" or categoria=="All" or categoria=="all":
+            allCategories=True
         else:
-            for ident in idents:
-                cur.execute('SELECT title from titles WHERE ident=?', (str(ident),))
-                data=cur.fetchone()
-                if not data==None:
-                    if not data[0].startswith(categoryprefix):
-                        titles.append(data[0])
-                        tf.write(data[0]+"\n")
+            categories = [cat.strip() for cat in categoria.split(",")]
+            categories_temp = categories[:]
+            categories_aux = []
+        
+        conn = sqlite3.connect(database)
+        cur = conn.cursor()
+        categoryprefix=category_namespaces[lang]+":"
+        titles = []    
+        if not allCategories:
+            while depth > 0:
+                while categories_temp:
+                    category = categories_temp.pop(0)
+                    cur.execute('SELECT categoryREL FROM categoryrelations WHERE category=?', (category,))
+                    data = cur.fetchall()
+                    for d in data:
+                        categories.append(d[0])
+                        categories_aux.append(d[0])
+                categories_temp.extend(categories_aux)
+                categories_aux = []
+                depth -= 1
+
+            idents = {}
+            with codecs.open(category_list_file, "w", encoding="utf-8") as cf:
+                for category in categories:
+                    cf.write(category + "\n")
+                    cur.execute('SELECT ident FROM categories WHERE category=?', (category,))
+                    data = cur.fetchall()
+                    for d in data:
+                        idents[d[0]] = 1
+
+            
+            if not allCategories:
+                with codecs.open(title_list_file, "w", encoding="utf-8") as tf:
+                    if lang != "en":
+                        for ident in idents:
+                            cur.execute('SELECT title FROM langlinks WHERE ident=? AND lang=?', (ident, lang))
+                            data = cur.fetchone()
+                            if not data==None:
+                                if not data[0].startswith(categoryprefix):
+                                    titles.append(data[0])
+                                    tf.write(data[0]+"\n")
+                    else:
+                        for ident in idents:
+                            cur.execute('SELECT title FROM titles WHERE ident=?', (str(ident),))
+                            data = cur.fetchone()
+                            if not data==None:
+                                if not data[0].startswith(categoryprefix):
+                                    titles.append(data[0])
+                                    tf.write(data[0]+"\n")
+        else:
+            with codecs.open(title_list_file, "w", encoding="utf-8") as tf:
+                if lang != "en":
+                    cur.execute('SELECT title FROM langlinks WHERE lang=?', (lang,))
+                    data = cur.fetchall()
                     
+                    if not data==None:
+                        for d in data:
+                            if not d[0].startswith(categoryprefix):
+                                titles.append(d[0])
+                                tf.write(d[0]+"\n")
+                else:
+                    cur.execute('SELECT title FROM titles')
+                    data = cur.fetchall()
+                    if not data==None:
+                        for d in data:
+                            if not d[0].startswith(categoryprefix):
+                                titles.append(d[0])
+                                tf.write(d[0]+"\n")
+        E7.delete(0,END)
+        if not allCategories:
+            E7.insert(0,len(categories))
         E8.delete(0,END)
         E8.insert(0,len(titles))
-        cf.close()
-        tf.close()
-    except:
+        try:
+            cf.close()
+        except:
+            pass
+        try:
+            tf.close()
+        except:
+            pass
+
+    except Exception as e:
         messagebox.showerror("Error", sys.exc_info())
         
 
@@ -346,7 +372,7 @@ E8.grid(sticky="W",row=7,column=1)
 
 
 
-B9=tkinter.Button(top, text = str("Create lists!"), borderwidth = 1, command=go,width=20).grid(row=8,column=0)
+B9=tkinter.Button(top, text = str("Create lists!"), borderwidth = 1, command=create_lists,width=20).grid(row=8,column=0)
 
 
 E1.delete(0,END)
